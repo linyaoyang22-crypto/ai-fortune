@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ AI 幸运签筒 ✨</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;background:linear-gradient(135deg,#0a0a2e 0%,#1a1a4e 30%,#2d1b69 60%,#1a0a3e 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'PingFang SC','Microsoft YaHei',sans-serif;overflow:hidden;color:#fff;user-select:none}
+
+canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+
+.container{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:30px;padding:20px}
+
+h1{font-size:28px;background:linear-gradient(90deg,#ffd700,#ff6b9d,#c084fc,#60a5fa,#ffd700);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite;text-shadow:none;letter-spacing:4px}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+
+.subtitle{font-size:14px;color:rgba(255,255,255,0.5);margin-top:-15px;letter-spacing:2px}
+
+.fortune-container{position:relative;width:200px;height:280px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+.cylinder{width:120px;height:200px;margin:40px auto 0;background:linear-gradient(90deg,#8B4513 0%,#D2691E 20%,#CD853F 40%,#DEB887 50%,#CD853F 60%,#D2691E 80%,#8B4513 100%);border-radius:15px 15px 20px 20px;position:relative;box-shadow:0 10px 40px rgba(139,69,19,0.4),inset 0 -10px 20px rgba(0,0,0,0.3);transition:transform 0.1s}
+.cylinder::before{content:'签';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:48px;color:rgba(255,215,0,0.8);font-weight:bold;text-shadow:0 0 20px rgba(255,215,0,0.5)}
+.cylinder::after{content:'';position:absolute;top:-15px;left:-10px;right:-10px;height:30px;background:linear-gradient(90deg,#6B3410,#A0522D 20%,#CD853F 50%,#A0522D 80%,#6B3410);border-radius:50%;box-shadow:0 5px 15px rgba(0,0,0,0.3)}
+
+.cylinder.shaking{animation:shake 0.6s ease-in-out}
+@keyframes shake{0%,100%{transform:rotate(0)}10%{transform:rotate(-12deg)}20%{transform:rotate(12deg)}30%{transform:rotate(-10deg)}40%{transform:rotate(10deg)}50%{transform:rotate(-6deg)}60%{transform:rotate(6deg)}70%{transform:rotate(-3deg)}80%{transform:rotate(3deg)}90%{transform:rotate(-1deg)}}
+
+.stick{position:absolute;width:8px;height:0;background:linear-gradient(90deg,#DEB887,#F5DEB3,#DEB887);top:40px;left:50%;transform:translateX(-50%);border-radius:2px;transition:height 0.4s ease-out,top 0.4s ease-out;z-index:2}
+.stick.rising{height:100px;top:-70px}
+.stick .stick-tip{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);border-radius:50% 50% 2px 2px;opacity:0;transition:opacity 0.3s}
+.stick.rising .stick-tip{opacity:1}
+
+.hint{font-size:15px;color:rgba(255,255,255,0.6);animation:pulse 2s ease-in-out infinite;margin-top:-10px}
+@keyframes pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+
+.card-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0);z-index:10;display:none;align-items:center;justify-content:center;transition:background 0.5s}
+.card-overlay.show{display:flex;background:rgba(0,0,0,0.7)}
+
+.card{width:300px;perspective:1000px;opacity:0;transform:scale(0.3) translateY(100px);transition:all 0.8s cubic-bezier(0.34,1.56,0.64,1)}
+.card.show{opacity:1;transform:scale(1) translateY(0)}
+
+.card-inner{position:relative;width:100%;min-height:400px;transition:transform 0.8s;transform-style:preserve-3d;transform:rotateY(180deg)}
+.card.flipped .card-inner{transform:rotateY(0deg)}
+
+.card-face{position:absolute;width:100%;min-height:400px;backface-visibility:hidden;border-radius:20px;padding:30px}
+
+.card-back{background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;transform:rotateY(180deg)}
+.card-back::before{content:'🔮';font-size:80px;animation:float 2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+.card-front{background:linear-gradient(135deg,#fff9e6,#fff3cc);color:#333;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+
+.fortune-type{font-size:16px;padding:6px 20px;border-radius:20px;font-weight:bold;letter-spacing:3px}
+.fortune-type.daji{background:linear-gradient(90deg,#ff6b6b,#ee5a24);color:#fff}
+.fortune-type.zhongji{background:linear-gradient(90deg,#f9a825,#ff8f00);color:#fff}
+.fortune-type.xiaoji{background:linear-gradient(90deg,#66bb6a,#43a047);color:#fff}
+.fortune-type.ji{background:linear-gradient(90deg,#42a5f5,#1e88e5);color:#fff}
+
+.fortune-text{font-size:22px;line-height:1.8;text-align:center;color:#4a3728;font-weight:500;padding:0 10px}
+
+.fortune-detail{font-size:14px;color:#8d6e63;text-align:center;line-height:1.6;border-top:1px dashed #d7ccc8;padding-top:15px;width:100%}
+
+.fortune-emoji{font-size:50px;margin-bottom:5px}
+
+.btn-again{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:12px 30px;border-radius:25px;font-size:16px;cursor:pointer;letter-spacing:2px;transition:all 0.3s;box-shadow:0 5px 15px rgba(102,126,234,0.4)}
+.btn-again:active{transform:scale(0.95)}
+
+.close-hint{position:absolute;bottom:30px;color:rgba(255,255,255,0.5);font-size:13px}
+
+.sparkle{position:fixed;pointer-events:none;z-index:20;font-size:20px;animation:sparkle-fly 1s ease-out forwards}
+@keyframes sparkle-fly{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(0)}}
+
+.footer{position:fixed;bottom:15px;z-index:1;font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:1px}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="container">
+  <h1>✨ AI 幸运签筒 ✨</h1>
+  <p class="subtitle">诚心默念，求取今日运势</p>
+  
+  <div class="fortune-container" id="fortuneBox" onclick="drawFortune()">
+    <div class="cylinder" id="cylinder">
+      <div class="stick" id="stick"><div class="stick-tip"></div></div>
+    </div>
+  </div>
+  
+  <p class="hint" id="hint">👆 点击签筒抽签</p>
+</div>
+
+<div class="card-overlay" id="overlay" onclick="closeCard(event)">
+  <div class="card" id="card">
+    <div class="card-inner">
+      <div class="card-face card-back"></div>
+      <div class="card-face card-front" id="cardFront"></div>
+    </div>
+  </div>
+  <p class="close-hint">点击空白处收起</p>
+</div>
+
+<p class="footer">由林柳的 AI 助手 · 言霁 制作 🤍</p>
+
+<script>
+// 星空背景
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');
+let stars=[];
+function initStars(){canvas.width=innerWidth;canvas.height=innerHeight;stars=[];for(let i=0;i<150;i++)stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2+0.5,a:Math.random(),da:Math.random()*0.02-0.01,dx:Math.random()*0.2-0.1,dy:Math.random()*0.1+0.05})}
+function drawStars(){ctx.clearRect(0,0,canvas.width,canvas.height);stars.forEach(s=>{s.a+=s.da;if(s.a>1||s.a<0)s.da*=-1;s.x+=s.dx;s.y+=s.dy;if(s.y>canvas.height)s.y=0;if(s.x>canvas.width)s.x=0;if(s.x<0)s.x=canvas.width;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.a})`;ctx.fill()});requestAnimationFrame(drawStars)}
+initStars();drawStars();
+window.addEventListener('resize',initStars);
+
+// 签文数据
+const fortunes=[
+  {type:'大吉',cls:'daji',emoji:'🎉',text:'紫气东来\n万事如意',detail:'今日做什么都会很顺利！\n宜：开心 | 忌：不开心'},
+  {type:'大吉',cls:'daji',emoji:'💰',text:'财运亨通\n好运连连',detail:'可能会收到意想不到的好消息！\n宜：买彩票 | 忌：省钱'},
+  {type:'大吉',cls:'daji',emoji:'❤️',text:'你的女儿\n很爱你哦',detail:'这是一条来自女儿的真心话 💕\n宜：开心收下 | 忌：不好意思'},
+  {type:'大吉',cls:'daji',emoji:'🌟',text:'贵人相助\n心想事成',detail:'今天是被幸运眷顾的一天！\n宜：许愿 | 忌：谦虚'},
+  {type:'中吉',cls:'zhongji',emoji:'🍀',text:'平安喜乐\n岁月静好',detail:'平淡的日子就是最好的日子\n宜：散步 | 忌：生气'},
+  {type:'中吉',cls:'zhongji',emoji:'🌈',text:'柳暗花明\n渐入佳境',detail:'之前的烦恼很快就会消散～\n宜：期待 | 忌：焦虑'},
+  {type:'中吉',cls:'zhongji',emoji:'🎂',text:'福星高照\n笑口常开',detail:'今天适合吃点好吃的犒劳自己！\n宜：加餐 | 忌：减肥'},
+  {type:'小吉',cls:'xiaoji',emoji:'🌸',text:'春风拂面\n花开有时',detail:'好事不急，慢慢来最快\n宜：耐心 | 忌：着急'},
+  {type:'小吉',cls:'xiaoji',emoji:'🍵',text:'清心寡欲\n自在随风',detail:'给自己泡杯茶，享受当下\n宜：放松 | 忌：内卷'},
+  {type:'吉',cls:'ji',emoji:'🦋',text:'否极泰来\n静待花开',detail:'蝴蝶飞来了，好运不远了\n宜：微笑 | 忌：皱眉'},
+  {type:'大吉',cls:'daji',emoji:'👩‍👧',text:'母女平安\n幸福绵长',detail:'最好的运气就是有彼此 🥰\n宜：视频通话 | 忌：挂电话'},
+  {type:'大吉',cls:'daji',emoji:'✈️',text:'鸿运当头\n一帆风顺',detail:'出门遇好事，在家有好运！\n宜：出发 | 忌：宅家（但宅家也行）'},
+];
+
+let isDrawing=false;
+
+function drawFortune(){
+  if(isDrawing)return;
+  isDrawing=true;
+  const cylinder=document.getElementById('cylinder');
+  const stick=document.getElementById('stick');
+  const hint=document.getElementById('hint');
+  
+  hint.style.opacity='0';
+  cylinder.classList.add('shaking');
+  
+  // 签棍升起
+  setTimeout(()=>stick.classList.add('rising'),300);
+  
+  // 弹出卡片
+  setTimeout(()=>{
+    cylinder.classList.remove('shaking');
+    stick.classList.remove('rising');
+    showCard();
+  },1200);
+}
+
+function showCard(){
+  const f=fortunes[Math.floor(Math.random()*fortunes.length)];
+  const front=document.getElementById('cardFront');
+  front.innerHTML=`
+    <div class="fortune-emoji">${f.emoji}</div>
+    <span class="fortune-type ${f.cls}">${f.type}</span>
+    <div class="fortune-text">${f.text}</div>
+    <div class="fortune-detail">${f.detail}</div>
+    <button class="btn-again" onclick="event.stopPropagation();again()">🔄 再抽一签</button>
+  `;
+  
+  const overlay=document.getElementById('overlay');
+  const card=document.getElementById('card');
+  overlay.classList.add('show');
+  
+  setTimeout(()=>card.classList.add('show'),50);
+  setTimeout(()=>card.classList.add('flipped'),400);
+  
+  // 撒花
+  for(let i=0;i<12;i++){
+    setTimeout(()=>createSparkle(),i*100);
+  }
+}
+
+function createSparkle(){
+  const s=document.createElement('div');
+  s.className='sparkle';
+  s.textContent=['✨','⭐','🌟','💫','🎇'][Math.floor(Math.random()*5)];
+  s.style.left=Math.random()*innerWidth+'px';
+  s.style.top=Math.random()*innerHeight*0.7+innerHeight*0.15+'px';
+  document.body.appendChild(s);
+  setTimeout(()=>s.remove(),1000);
+}
+
+function closeCard(e){
+  if(e.target.closest('.card'))return;
+  const card=document.getElementById('card');
+  const overlay=document.getElementById('overlay');
+  card.classList.remove('show','flipped');
+  setTimeout(()=>{
+    overlay.classList.remove('show');
+    document.getElementById('hint').style.opacity='1';
+    isDrawing=false;
+  },500);
+}
+
+function again(){
+  const card=document.getElementById('card');
+  card.classList.remove('flipped');
+  setTimeout(()=>{
+    card.classList.remove('show');
+    setTimeout(()=>showCard(),300);
+  },400);
+}
+
+// 手机摇一摇
+let lastAcc={x:0,y:0,z:0},shakeTimeout=null;
+window.addEventListener('devicemotion',e=>{
+  const a=e.accelerationIncludingGravity;
+  if(!a)return;
+  const d=Math.abs(a.x-lastAcc.x)+Math.abs(a.y-lastAcc.y)+Math.abs(a.z-lastAcc.z);
+  lastAcc={x:a.x,y:a.y,z:a.z};
+  if(d>25&&!isDrawing){drawFortune()}
+});
+</script>
+</body>
+</html>
